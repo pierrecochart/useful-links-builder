@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resource Block Generator</title>
+    <style>
+        /* Tool Interface Styles (Not part of the generated code) */
+        :root {
+            --primary: #2563eb;
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --border: #e2e8f0;
+            --text: #334155;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+            line-height: 1.5;
+        }
+        h1 { margin-bottom: 20px; }
+        
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+        }
+        
+        /* Left Column: Controls */
+        .controls {
+            background: var(--surface);
+            padding: 24px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .input-group {
+            background: #f1f5f9;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            border: 1px solid var(--border);
+            position: relative;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: #64748b;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            font-size: 14px;
+            box-sizing: border-box; 
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn-add { background: var(--primary); color: white; width: 100%; margin-bottom: 20px; }
+        .btn-add:hover { background: #1d4ed8; }
+
+        .btn-remove {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #ef4444;
+            color: white;
+            padding: 4px 8px;
+            font-size: 12px;
+        }
+
+        .style-select {
+            width: 100%;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #cbd5e1;
+            margin-bottom: 20px;
+            font-size: 16px;
+        }
+
+        /* Right Column: Preview & Output */
+        .output-area {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .preview-box {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            border: 1px dashed #94a3b8;
+        }
+
+        textarea {
+            width: 100%;
+            height: 300px;
+            padding: 16px;
+            font-family: monospace;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            font-size: 13px;
+            background: #1e293b;
+            color: #e2e8f0;
+            box-sizing: border-box;
+        }
+
+        .copy-btn {
+            background: #10b981;
+            color: white;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Resource Block Generator</h1>
+
+    <div class="container">
+        <div class="controls">
+            <label style="font-weight:bold;">Choose Style Preset:</label>
+            <select id="styleSelect" class="style-select" onchange="generateCode()">
+                <option value="default">Default (Slate & Blue)</option>
+                <option value="dark">Dark Mode (High Contrast)</option>
+                <option value="teal">Professional (Teal & White)</option>
+                <option value="minimal">Minimalist (Clean Border)</option>
+            </select>
+
+            <div id="itemsContainer">
+                </div>
+
+            <button class="btn btn-add" onclick="addItem()">+ Add Another Resource</button>
+        </div>
+
+        <div class="output-area">
+            <div>
+                <h3>Live Preview</h3>
+                <div id="preview" class="preview-box"></div>
+            </div>
+            
+            <div>
+                <h3>Generated HTML Code</h3>
+                <textarea id="codeOutput" readonly></textarea>
+                <button class="btn copy-btn" onclick="copyToClipboard()">Copy Code to Clipboard</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Preset Styles Configuration
+        const styles = {
+            default: {
+                container: 'background: #f1f5f9; border-radius: 12px; padding: 28px; margin: 40px 0; border: 1px solid #e2e8f0;',
+                arrow: 'color: #3b82f6;',
+                link: 'color: #2563eb; text-decoration: none; font-weight: 600;',
+                desc: 'color: #64748b;',
+                header: 'color: inherit;'
+            },
+            dark: {
+                container: 'background: #1e293b; border-radius: 12px; padding: 28px; margin: 40px 0; border: 1px solid #334155; color: white;',
+                arrow: 'color: #38bdf8;',
+                link: 'color: #38bdf8; text-decoration: none; font-weight: 600;',
+                desc: 'color: #94a3b8;',
+                header: 'color: #ffffff;'
+            },
+            teal: {
+                container: 'background: #f0fdfa; border-radius: 12px; padding: 28px; margin: 40px 0; border-left: 4px solid #0d9488;',
+                arrow: 'color: #0d9488;',
+                link: 'color: #0f766e; text-decoration: none; font-weight: 700;',
+                desc: 'color: #57606a;',
+                header: 'color: #115e59;'
+            },
+            minimal: {
+                container: 'background: transparent; border-radius: 4px; padding: 0; margin: 40px 0; border-top: 2px solid #e2e8f0; border-bottom: 2px solid #e2e8f0; padding: 20px 0;',
+                arrow: 'color: #000000;',
+                link: 'color: #000000; text-decoration: underline; font-weight: 600;',
+                desc: 'color: #444;',
+                header: 'color: #000000;'
+            }
+        };
+
+        // Initialize with one empty item
+        function init() {
+            addItem("3CX Features, Benefits & Pricing Guide", "https://www.t2kvoip.co.uk/blog/3cx-features-benefits-pricing", "Complete breakdown of 3CX capabilities and cost structure");
+            generateCode();
+        }
+
+        function addItem(title = "", url = "", desc = "") {
+            const container = document.getElementById('itemsContainer');
+            const id = Date.now();
+            
+            const div = document.createElement('div');
+            div.className = 'input-group';
+            div.id = `item-${id}`;
+            div.innerHTML = `
+                <button class="btn btn-remove" onclick="removeItem('${id}')">Remove</button>
+                <label>Heading / Link Text</label>
+                <input type="text" class="inp-title" value="${title}" placeholder="e.g. SIP Trunks Explained" oninput="generateCode()">
+                
+                <label>URL</label>
+                <input type="text" class="inp-url" value="${url}" placeholder="e.g. https://..." oninput="generateCode()">
+                
+                <label>Description Text</label>
+                <input type="text" class="inp-desc" value="${desc}" placeholder="e.g. How SIP trunking works..." oninput="generateCode()">
+            `;
+            container.appendChild(div);
+            generateCode();
+        }
+
+        function removeItem(id) {
+            const item = document.getElementById(`item-${id}`);
+            item.remove();
+            generateCode();
+        }
+
+        function generateCode() {
+            const styleKey = document.getElementById('styleSelect').value;
+            const currentStyle = styles[styleKey];
+            
+            // Gather all inputs
+            const items = document.querySelectorAll('.input-group');
+            let listItemsHTML = '';
+
+            items.forEach(item => {
+                const title = item.querySelector('.inp-title').value;
+                const url = item.querySelector('.inp-url').value;
+                const desc = item.querySelector('.inp-desc').value;
+
+                if(title || url) { // Only generate if there is content
+                    listItemsHTML += `
+    <li style="margin-bottom: 16px; padding-left: 28px; position: relative;">
+      <span style="position: absolute; left: 0; ${currentStyle.arrow} font-size: 20px;">→</span>
+      <a href="${url}" style="${currentStyle.link}">${title}</a>
+      <p style="margin: 4px 0 0 0; ${currentStyle.desc} font-size: 14px;">${desc}</p>
+    </li>`;
+                }
+            });
+
+            const finalHTML = `<div style="${currentStyle.container}">
+  <h4 style="margin: 0 0 20px 0; ${currentStyle.header}">Additional Reading & Resources</h4>
+  <ul style="margin: 0; padding: 0; list-style: none;">${listItemsHTML}
+  </ul>
+</div>`;
+
+            document.getElementById('codeOutput').value = finalHTML;
+            document.getElementById('preview').innerHTML = finalHTML;
+        }
+
+        function copyToClipboard() {
+            const copyText = document.getElementById("codeOutput");
+            copyText.select();
+            document.execCommand("copy");
+            alert("HTML copied to clipboard!");
+        }
+
+        // Run on load
+        window.onload = init;
+    </script>
+</body>
+</html>
